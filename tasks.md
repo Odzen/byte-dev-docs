@@ -25,9 +25,9 @@ A live URL exists from Week 2 onward. The launch date is gated on auth + the ful
 - **Upstream dependency on evolution-mvp** — two pieces, both blocking the demo path:
   1. **The CLI must be published.** `tooling/cli/package.json` is currently `"private": true`; it must be added to the publishable packages list so byte-deploy's worker image can install it from the GitLab registry.
   2. **The CLI must emit ready-to-run scaffolds.** No `workspace:*` or `catalog:*` references in any `package.json`. The rewrite happens inside the CLI at publish time, not in byte-deploy.
-- **Real AWS in v1.** Per-app CloudFront + S3 + Route 53 wildcard subdomain. Pulled in from the original v1.1 deferral list because LocalStack URLs don't sell the demo.
+- **Real AWS in v1.** Per-app CloudFront + S3 + Route 53 wildcard subdomain. Pulled in from the original v1.1 deferral list because LocalStack URLs don't sell the demo. Provisioning uses an IaC tool (Terraform or Pulumi); the choice is locked in Week 1 via a short spike.
 - **No multi-environment, no promotion, no rollback, no approval.** Single environment per app. Deferred to v1.1.
-- **SPA only** per [D-004](./04-decisions.md#d-004). Lambda SSR runtime deferred.
+- **SPA only for v1.** Lambda SSR runtime deferred.
 - **Self-hosted Temporal locally for development.** Production cluster deferred to v1.1.
 - **Auth is the last phase.** Bearer-token stub through Phases 1–2.
 
@@ -307,7 +307,7 @@ Push-to-deploy on a known-good repo: clone → CodeBuild → manifest → upload
 
 ## P2.9 — AWS account, base networking, and per-app envelope
 
-**Description:** Provision the AWS account(s), VPC, base IAM roles, and the per-app envelope module (CloudFront distribution, S3 static prefix, IAM runtime role, log group, SSM path). The platform itself runs out of one chosen AWS account; per-tenant account isolation is deferred ([D-007](./04-decisions.md#d-007)).
+**Description:** Provision the AWS account(s), VPC, base IAM roles, and the per-app envelope module (CloudFront distribution, S3 static prefix, IAM runtime role, log group, SSM path). The platform itself runs out of one chosen AWS account; per-tenant account isolation is deferred. All provisioning uses the IaC tool chosen in Week 1 (Terraform or Pulumi).
 
 **Acceptance criteria:**
 - [ ] AWS account exists and is access-controlled
@@ -321,7 +321,7 @@ Push-to-deploy on a known-good repo: clone → CodeBuild → manifest → upload
 
 ## P2.10 — Domain, Route 53, and TLS
 
-**Description:** Wire up the real domain so apps deploy at real subdomains. Per [D-005](./04-decisions.md#d-005), default to `*.preview.byte.yum` for v1.
+**Description:** Wire up the real domain so apps deploy at real subdomains. Default to `*.preview.byte.yum` for v1.
 
 **Acceptance criteria:**
 - [ ] Chosen domain is hosted in Route 53
@@ -475,13 +475,13 @@ Documented so nothing is lost. Each is a discrete post-launch effort.
 | Approval gate + approval lifecycle + queue UI | Cut from v1 scope |
 | Environment snapshot per deployment | Only useful with rollback; defer with it |
 | PR previews (workflow + UI) | High orchestration cost; demo doesn't need them |
-| Server-side rendering runtime (Lambda + alias) | SPA-only per [D-004](./04-decisions.md#d-004) |
+| Server-side rendering runtime (Lambda + alias) | SPA-only in v1 |
 | Production Temporal cluster on shared infrastructure | Local self-hosted is the v1 stack |
 | Native release support (Expo, Apple, Google) | Original Phase 4 |
 | Platform intelligence (risk scoring, AI failure diagnosis) | Original Phase 5 |
 | Visual Builder feature | Future scope; chassis is ready |
 | Federated graph publication | Schema is federation-ready; publication later |
-| Per-tenant AWS accounts / VPC isolation | Namespaced isolation for v1 ([D-007](./04-decisions.md#d-007)) |
+| Per-tenant AWS accounts / VPC isolation | Namespaced isolation for v1 |
 | Custom customer domains | Platform-owned domain only in v1 |
 | Per-PR backend ephemeral environments | Frontend previews only — and even those deferred |
 
@@ -517,7 +517,7 @@ When the project moves past v1, the work below happens roughly in this order. **
 
 ## V1.1.7 — Production Temporal cluster
 
-**Description:** Stand up the orchestration cluster on shared production infrastructure per the discipline locked in [D-001](./04-decisions.md#d-001).
+**Description:** Stand up the orchestration cluster on shared production infrastructure per the locked Temporal discipline.
 
 ## V1.1.8 — Production cutover for the platform itself
 

@@ -96,6 +96,16 @@ Deploy workflow
    ├─ Get the code
    │     Pull the latest commit from the app's repo
    │
+   ├─ Ensure the AWS envelope exists  ← IaC tool runs HERE
+   │     First deploy of a new app: create the CloudFront
+   │     distribution, S3 prefix, DNS record, IAM role,
+   │     and log group via the IaC tool (Terraform or Pulumi).
+   │     CloudFront propagation adds 10-15 minutes on first
+   │     deploy only.
+   │
+   │     Every subsequent deploy: this step is a no-op
+   │     drift check (~1 second). Resources already exist.
+   │
    ├─ Build the app
    │     Run a clean build in an isolated environment:
    │     install dependencies, compile, output static files
@@ -188,6 +198,12 @@ What each piece does:
 - **Secrets Manager** stores credentials the backend or the build needs (the private package registry token, VCS tokens, future app-level secrets).
 
 The split is: **the backend talks to AWS; the CLI talks to the backend.** A change in AWS service choice, region, or configuration never requires a CLI update — only a backend update.
+
+### How AWS resources are actually created
+
+The backend does not create CloudFront distributions, S3 prefixes, DNS records, IAM roles, or log groups by clicking the AWS console — they're managed by an **Infrastructure as Code (IaC) tool**. The platform uses either **Terraform** or **Pulumi**; the choice will be locked in Week 1 via a short spike. Either tool produces the same AWS resources via the same AWS APIs underneath.
+
+The IaC tool only runs at one point in the lifecycle: the **first deploy of a new app**, inside the "Ensure the AWS envelope exists" step above. On every subsequent deploy it's a no-op drift check. All other deploy steps (build trigger, asset upload, CDN origin update) call AWS directly through the SDK — no IaC tool involved.
 
 ### Looking ahead — mobile app deployments
 
