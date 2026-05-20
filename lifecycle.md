@@ -96,15 +96,20 @@ Deploy workflow
    ├─ Get the code
    │     Pull the latest commit from the app's repo
    │
-   ├─ Ensure the AWS envelope exists  ← IaC tool runs HERE
-   │     First deploy of a new app: create the CloudFront
-   │     distribution, S3 prefix, DNS record, IAM role,
-   │     and log group via the IaC tool (Terraform or Pulumi).
+   ├─ Ensure the AWS envelope exists  ← IaC tool runs HERE (every deploy)
+   │     First deploy of a new app: the IaC tool provisions
+   │     the CloudFront distribution, S3 prefix, DNS record,
+   │     IAM role, and log group (Terraform or Pulumi).
+   │     State is saved after each resource so a mid-flight
+   │     failure leaves a recoverable checkpoint for the
+   │     next attempt.
    │     CloudFront propagation adds 10-15 minutes on first
    │     deploy only.
    │
-   │     Every subsequent deploy: this step is a no-op
-   │     drift check (~1 second). Resources already exist.
+   │     Every subsequent deploy: the IaC tool runs a
+   │     refresh-and-plan that no-ops in ~1 second when
+   │     nothing has drifted — also catches manual
+   │     AWS-console changes.
    │
    ├─ Build the app
    │     Run a clean build in an isolated environment:
@@ -203,7 +208,7 @@ The split is: **the backend talks to AWS; the CLI talks to the backend.** A chan
 
 The backend does not create CloudFront distributions, S3 prefixes, DNS records, IAM roles, or log groups by clicking the AWS console — they're managed by an **Infrastructure as Code (IaC) tool**. The platform uses either **Terraform** or **Pulumi**; the choice will be locked in Week 1 via a short spike. Either tool produces the same AWS resources via the same AWS APIs underneath.
 
-The IaC tool only runs at one point in the lifecycle: the **first deploy of a new app**, inside the "Ensure the AWS envelope exists" step above. On every subsequent deploy it's a no-op drift check. All other deploy steps (build trigger, asset upload, CDN origin update) call AWS directly through the SDK — no IaC tool involved.
+The IaC tool runs on **every deploy**, inside the "Ensure the AWS envelope exists" step above. On the first deploy it provisions the envelope, saving state after each resource so a mid-flight failure leaves a recoverable checkpoint. On every subsequent deploy it runs a refresh-and-plan that no-ops in ~1 second when nothing has drifted — also catching manual AWS-console changes in the same uniform step. All other deploy steps (build trigger, asset upload, CDN origin update) call AWS directly through the SDK — no IaC tool involved.
 
 ### Looking ahead — mobile app deployments
 
